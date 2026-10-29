@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>SPC · 本地质量工作台</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到工作区</a>
+  <aside class="sidebar" aria-label="工作台导航">
+    <a class="brand" href="#main"><span class="brand-mark">SPC</span><span>质量分析工作台<small>LOCAL WORKBENCH</small></span></a>
+    <div class="sidebar-label">分析与闭环</div>
+    <nav>
+      <a href="#baseline-section"><span>01</span> 基线与人工审批</a>
+      <a href="#evaluation-section"><span>02</span> 监测与控制图</a>
+      <a href="#investigation-section"><span>03</span> 风险与模型调查</a>
+      <a href="#proposal-section"><span>04</span> 人工措施与验证</a>
+      <a href="#audit-section"><span>05</span> 审计记录</a>
+    </nav>
+    <div class="sidebar-note"><strong>原始合成数据</strong><p>仅用于本地验证。不是生产批准，不连接或操作设备。</p><p>统计信号 ≠ 已证实根因</p></div>
+  </aside>
+  <div class="shell">
+    <header class="topbar">
+      <div class="breadcrumb">质量工程 <span>/</span> SPC 工作台</div>
+      <div class="session"><span id="mode-badge" class="badge neutral">模型模式待验证</span><span id="actor-label">未登录</span><button id="logout-button" class="button quiet" type="button" hidden>退出 / 切换身份</button></div>
+    </header>
+    <main id="main">
+      <div class="page-heading"><div><p class="eyebrow">STATISTICAL PROCESS CONTROL</p><h1>从统计信号，到有证据的闭环</h1><p class="muted">冻结基线 · 确定性统计 · 有界调查 · 人工决策</p></div><span class="source-stamp">LOCAL ONLY · 非生产</span></div>
+      <div id="notice" class="notice" role="status" aria-live="polite" aria-atomic="true">请使用本地签发的访问令牌登录。不会自动创建或批准任何对象。</div>
+      <section id="login-section" class="card login-card" aria-labelledby="login-title">
+        <div class="section-heading"><span class="step">身份</span><div><h2 id="login-title">连接本地会话</h2><p>身份、工厂范围和权限由服务端验证。</p></div></div>
+        <form id="login-form" autocomplete="off">
+          <label for="token-input">访问令牌</label>
+          <div class="inline-form"><input id="token-input" type="password" required maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="粘贴本地 Bearer token（不含 Bearer 前缀）"><button id="login-button" type="submit" class="button primary">登录工作台</button></div>
+          <p class="helper">令牌仅保存在当前页面内存，不写入 URL、日志或浏览器存储。刷新页面或退出即清除。退出不会撤销服务端令牌，也不能保证中止已经提交的服务端任务。</p>
+        </form>
+      </section>
+      <div id="workspace" hidden>
+        <section class="context-strip" aria-label="会话概览"><div><span class="eyebrow">当前范围</span><strong id="scope-label">—</strong></div><div id="collection-counts" class="muted"></div><button id="refresh-button" class="button secondary" type="button">刷新工作区</button></section>
+        <p id="provider-detail" class="helper"></p>
+        <p class="helper">按钮按当前角色和状态提供操作提示；实际授权、哈希校验与状态流转均由服务端执行。当前页面按单个操作串行处理，不承诺跨标签页并发一致性。</p>
+
+        <section id="baseline-section" class="card" aria-labelledby="baseline-title">
+          <div class="section-heading"><span class="step">01</span><div><h2 id="baseline-title">基线与人工审批</h2><p>独立 Phase I 数据建立 draft；审批绑定完整内容哈希，批准后才能用于监测。</p></div></div>
+          <div class="two-columns">
+            <form id="baseline-create-form" class="form-panel">
+              <h3>建立基线草稿</h3><label for="baseline-dataset-select">Phase I 原始合成数据</label><select id="baseline-dataset-select" required></select>
+              <p class="helper">本地夹具中的 Phase I 数据为 synthetic-phase-one。数据适用性由统计服务判断，前端不拟合或修正统计量。</p>
+              <div id="baseline-dataset-meta" class="metadata"></div><button id="baseline-create-button" class="button primary" type="submit">创建 draft 基线</button>
+            </form>
+            <div class="form-panel"><label for="baseline-select">已有基线</label><select id="baseline-select"></select><div id="baseline-detail" class="detail-panel"></div></div>
+          </div>
+          <form id="baseline-review-form" class="review-panel">
+            <h3>人工审批基线</h3><p id="baseline-review-gate" class="helper"></p><div id="baseline-review-hash" class="hash-block"></div>
+            <div class="two-columns"><div><label for="baseline-decision">审批决定</label><select id="baseline-decision" required><option value="">请主动选择</option><option value="approved">批准 approved</option><option value="rejected">拒绝 rejected</option></select></div><div><label for="baseline-review-note">审批依据（10–1500 字符）</label><textarea id="baseline-review-note" required minlength="10" maxlength="1500" rows="2" placeholder="说明对原始数据、适用性与内容哈希的核查依据"></textarea></div></div>
+            <label class="check-row"><input id="baseline-review-confirm" type="checkbox" required>我已核对上方完整哈希与基线内容；这不是生产批准。</label><button id="baseline-review-button" class="button secondary" type="submit">提交人工审批</button>
+          </form>
+        </section>
+
+        <section id="evaluation-section" class="card" aria-labelledby="evaluation-title">
+          <div class="section-heading"><span class="step">02</span><div><h2 id="evaluation-title">监测与控制图</h2><p>X̄ / R 限值来自冻结基线；规格独立展示，绝不作为控制限。</p></div></div>
+          <form id="evaluation-form" class="evaluation-controls"><div><label for="evaluation-baseline-select">已批准的基线</label><select id="evaluation-baseline-select" required></select></div><div><label for="monitor-dataset-select">监测案例 / 数据集</label><select id="monitor-dataset-select" required></select></div><button id="evaluate-button" class="button primary" type="submit">运行统计评估</button></form>
+          <div id="monitor-dataset-meta" class="metadata"></div>
+          <div class="history-selector"><label for="evaluation-select">查看已有评估</label><select id="evaluation-select"></select></div>
+          <div id="analysis-content" class="analysis-content"></div>
+        </section>
+
+        <section id="investigation-section" class="card" aria-labelledby="investigation-title">
+          <div class="section-heading"><span class="step">03</span><div><h2 id="investigation-title">风险与模型调查</h2><p>调查只读证据，不创建措施、不审批、不控制设备。假设和建议始终是未验证草稿。</p></div></div>
+          <label for="risk-select">当前风险（调查与新措施的关联对象）</label><select id="risk-select"></select><div id="risk-detail" class="detail-panel"></div>
+          <div class="button-row"><button id="investigation-create-button" class="button primary" type="button">为此风险创建调查</button></div>
+          <form id="investigation-load-form" class="inline-form separated"><div class="grow"><label for="investigation-id-input">恢复已有调查 ID</label><input id="investigation-id-input" maxlength="80" required autocomplete="off" spellcheck="false" placeholder="investigation_…"></div><button id="investigation-load-button" class="button secondary" type="submit">读取调查</button></form>
+          <div id="investigation-detail" class="detail-panel"></div>
+          <div class="button-row"><button id="investigation-run-button" class="button primary" type="button">主动运行调查</button><button id="investigation-refresh-button" class="button secondary" type="button">读取最新状态</button><button id="investigation-cancel-button" class="button danger-outline" type="button">取消未运行的调查</button></div>
+          <p class="helper">运行请求等待服务端有界返回，不自动重试、不无限轮询。网络中断不代表服务端未执行，请主动读取最新状态。活动 worker 可能无法取消。</p>
+          <div id="investigation-report"></div>
+          <details id="reconcile-section" class="separated"><summary>管理员：未知模型调用对账</summary><p class="helper">仅 blocked 且待对账的调用可操作。未知 token 用量留空，不把未知当作 0；服务端执行保守记账。对账后不会自动继续运行。</p>
+            <form id="reconcile-form"><div class="two-columns"><div><label for="reconcile-call-select">待对账调用</label><select id="reconcile-call-select" required></select></div><div><label for="reconcile-tokens">已确认的总 token 用量（未知留空）</label><input id="reconcile-tokens" type="number" min="0" max="100000" step="1" placeholder="未知 — 不填"></div></div><label for="reconcile-note">对账依据（10–1500 字符）</label><textarea id="reconcile-note" required minlength="10" maxlength="1500" rows="2"></textarea><label class="check-row"><input id="reconcile-confirm" type="checkbox" required>我主动确认该调用没有可使用的结果（no_result）。</label><button id="reconcile-button" class="button secondary" type="submit">提交人工对账</button></form>
+          </details>
+        </section>
+
+        <section id="proposal-section" class="card" aria-labelledby="proposal-title">
+          <div class="section-heading"><span class="step">04</span><div><h2 id="proposal-title">人工措施与后续验证</h2><p>由人独立撰写措施，不从模型草稿自动填充。审批、执行确认、后续评估和关闭相互独立。</p></div></div>
+          <form id="proposal-create-form" class="form-panel"><h3>独立创建措施</h3><p id="proposal-risk-label" class="helper"></p><div class="two-columns"><div><label for="proposal-description">措施描述（10–1000 字符）</label><textarea id="proposal-description" required minlength="10" maxlength="1000" rows="3" placeholder="人工填写调查后拟采取的措施"></textarea></div><div><label for="proposal-expected-result">预期结果（10–500 字符）</label><textarea id="proposal-expected-result" required minlength="10" maxlength="500" rows="3" placeholder="人工填写后续验证目标与预期结果"></textarea></div></div><button id="proposal-create-button" class="button primary" type="submit">创建人工措施草稿</button></form>
+          <div class="history-selector"><label for="proposal-select">已有措施</label><select id="proposal-select"></select></div><div id="proposal-detail" class="detail-panel"></div>
+          <form id="proposal-review-form" class="review-panel"><h3>A. 人工审批</h3><p id="proposal-review-gate" class="helper"></p><div id="proposal-review-hash" class="hash-block"></div><div class="two-columns"><div><label for="proposal-decision">审批决定</label><select id="proposal-decision" required><option value="">请主动选择</option><option value="approved">批准 approved</option><option value="rejected">拒绝 rejected</option></select></div><div><label for="proposal-review-note">审批依据（10–1500 字符）</label><textarea id="proposal-review-note" required minlength="10" maxlength="1500" rows="2"></textarea></div></div><label class="check-row"><input id="proposal-review-confirm" type="checkbox" required>我已核对措施、预期结果与完整内容哈希。</label><button id="proposal-review-button" class="button secondary" type="submit">提交措施审批</button></form>
+          <form id="proposal-execute-form" class="review-panel"><h3>B. 记录人工执行确认</h3><div class="warning-box">这不是设备执行接口，不发送任何设备指令。这里只记录人对已观察到的措施执行情况的确认。</div><div id="proposal-execute-hash" class="hash-block"></div><div class="two-columns"><div><label for="execution-observed-at">实际观察时间（当前浏览器本地时区）</label><input id="execution-observed-at" type="datetime-local" required step="1"></div><div><label for="execution-note">执行观察依据（10–1500 字符）</label><textarea id="execution-note" required minlength="10" maxlength="1500" rows="2"></textarea></div></div><label class="check-row"><input id="execution-confirm" type="checkbox" required>我主动确认此措施已由人执行并观察；我理解这不是设备执行。</label><button id="proposal-execute-button" class="button secondary" type="submit">记录人工执行确认</button></form>
+          <form id="proposal-followup-form" class="review-panel"><h3>C. 独立后续数据验证</h3><p class="helper">选择执行后的独立合成数据；沿用原批准基线。时间、数据复用和适用性均由服务端核验。</p><div class="inline-form"><div class="grow"><label for="followup-dataset-select">后续数据集</label><select id="followup-dataset-select" required></select></div><button id="proposal-followup-button" class="button secondary" type="submit">评估后续数据</button></div><div id="followup-dataset-meta" class="metadata"></div></form>
+          <div id="followup-result" class="analysis-content"></div>
+          <form id="proposal-close-form" class="review-panel"><h3>D. 人工审核并关闭</h3><p id="proposal-close-gate" class="helper"></p><div id="followup-close-hash" class="hash-block"></div><label for="proposal-close-note">关闭依据（10–1500 字符）</label><textarea id="proposal-close-note" required minlength="10" maxlength="1500" rows="2"></textarea><label class="check-row"><input id="proposal-close-confirm" type="checkbox" required>我已独立审核该后续评估及其完整哈希，确认符合关闭条件。</label><button id="proposal-close-button" class="button secondary" type="submit">提交人工关闭</button></form>
+        </section>
+
+        <section id="audit-section" class="card" aria-labelledby="audit-title"><div class="section-heading"><span class="step">05</span><div><h2 id="audit-title">审计记录</h2><p>读取服务端对象审计链，保留操作人、事件与绑定证据。</p></div></div><label for="audit-object-select">选择当前会话中的对象</label><select id="audit-object-select"></select><form id="audit-form" class="inline-form separated"><div class="grow"><label for="audit-object-input">对象 ID</label><input id="audit-object-input" required maxlength="120" autocomplete="off" spellcheck="false" placeholder="baseline / evaluation / risk / investigation / proposal ID"></div><button id="audit-load-button" class="button secondary" type="submit">读取审计记录</button></form><div id="audit-result" class="detail-panel"></div></section>
+      </div>
+      <footer>本地 SPC 工作台 <span>原始合成数据 · 统计事实与模型草稿分离 · 不操作设备</span></footer>
+    </main>
+  </div>
+  <noscript>本工作台需要运行本地 JavaScript。没有启用脚本时，不会提交令牌或执行工作流。</noscript>
+</body>
+</html>
